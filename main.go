@@ -20,19 +20,31 @@ func newClient(gardenAddress string) garden.Client {
 func main() {
 	var gardenAddress string
 	var numContainers int
-	var debug bool
+	var enableDiskLimits bool
 
 	flag.StringVar(&gardenAddress, "gardenAddr", "127.0.0.1:7777", "Garden server address")
 	flag.IntVar(&numContainers, "numContainers", 10, "Number of containers")
-	flag.BoolVar(&debug, "debug", false, "Enable debug logging")
+	flag.BoolVar(&enableDiskLimits, "enableDiskLimits", false, "Create containers with a disk limit")
 	flag.Parse()
 
 	gdn := newClient(gardenAddress)
 
 	log.Printf("=== Creating %d containers sequentially ===\n", numContainers)
+	var diskLimits garden.DiskLimits
+
+	if enableDiskLimits {
+		diskLimits = garden.DiskLimits{
+			ByteSoft: uint64(10000000),
+			ByteHard: uint64(20000000),
+		}
+	}
+
 	for i := 0; i < numContainers; i++ {
 		_, err := gdn.Create(garden.ContainerSpec{
 			Handle: handle(i),
+			Limits: garden.Limits{
+				Disk: diskLimits,
+			},
 		})
 
 		if err != nil {
