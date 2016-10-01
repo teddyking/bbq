@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/client"
@@ -21,9 +22,11 @@ func main() {
 	var gardenAddress string
 	var numContainers int
 	var enableDiskLimits bool
+	var destroyDelay int
 
 	flag.StringVar(&gardenAddress, "gardenAddr", "127.0.0.1:7777", "Garden server address")
 	flag.IntVar(&numContainers, "numContainers", 10, "Number of containers")
+	flag.IntVar(&destroyDelay, "destroyDelay", 0, "Time in seconds to wait before starting to destroy containers")
 	flag.BoolVar(&enableDiskLimits, "enableDiskLimits", false, "Create containers with a disk limit")
 	flag.Parse()
 
@@ -68,6 +71,12 @@ func main() {
 	if len(containers) != numContainers {
 		log.Printf("Expected to find %d containers, but found %d\n", numContainers, len(containers))
 		os.Exit(1)
+	}
+
+	if destroyDelay != 0 {
+		log.Printf("=== Waiting %d seconds before starting to destroy containers ===\n", destroyDelay)
+		time.Sleep(time.Second * time.Duration(destroyDelay))
+		log.Printf("=== DONE ===\n")
 	}
 
 	log.Printf("=== Destroying %d containers sequentially ===\n", numContainers)
