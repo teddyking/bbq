@@ -23,11 +23,13 @@ func main() {
 	var numContainers int
 	var enableDiskLimits bool
 	var destroyDelay int
+	var reverseDeletes bool
 
 	flag.StringVar(&gardenAddress, "gardenAddr", "127.0.0.1:7777", "Garden server address")
 	flag.IntVar(&numContainers, "numContainers", 10, "Number of containers")
 	flag.IntVar(&destroyDelay, "destroyDelay", 0, "Time in seconds to wait before starting to destroy containers")
 	flag.BoolVar(&enableDiskLimits, "enableDiskLimits", false, "Create containers with a disk limit")
+	flag.BoolVar(&reverseDeletes, "reverseDeletes", false, "Delete containers in reverse order")
 	flag.Parse()
 
 	gdn := newClient(gardenAddress)
@@ -79,17 +81,31 @@ func main() {
 		log.Printf("=== DONE ===\n")
 	}
 
-	log.Printf("=== Destroying %d containers sequentially ===\n", numContainers)
-	for i := 0; i < numContainers; i++ {
-		if err := gdn.Destroy(handle(i)); err != nil {
-			log.Printf("Error destroying container '%s' - %s\n", handle(i), err.Error())
-			os.Exit(1)
-		}
+	if !reverseDeletes {
+		log.Printf("=== Destroying %d containers sequentially ===\n", numContainers)
+		for i := 0; i < numContainers; i++ {
+			if err := gdn.Destroy(handle(i)); err != nil {
+				log.Printf("Error destroying container '%s' - %s\n", handle(i), err.Error())
+				os.Exit(1)
+			}
 
-		fmt.Print(".")
+			fmt.Print(".")
+		}
+		fmt.Println("")
+		log.Printf("=== DONE ===\n")
+	} else {
+		log.Printf("=== Destroying %d containers sequentially in reverse order ===\n", numContainers)
+		for i := numContainers - 1; i >= 0; i-- {
+			if err := gdn.Destroy(handle(i)); err != nil {
+				log.Printf("Error destroying container '%s' - %s\n", handle(i), err.Error())
+				os.Exit(1)
+			}
+
+			fmt.Print(".")
+		}
+		fmt.Println("")
+		log.Printf("=== DONE ===\n")
 	}
-	fmt.Println("")
-	log.Printf("=== DONE ===\n")
 }
 
 func handle(index int) string {
